@@ -119,6 +119,7 @@
             this._buttonOCR.TabIndex = 4;
             this._buttonOCR.Text = "OCR";
             this._buttonOCR.UseVisualStyleBackColor = true;
+            this._buttonOCR.Click += new System.EventHandler(this._buttonOCR_Click);
             // 
             // _textboxOCR
             // 

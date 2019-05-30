@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using Emgu.CV;
+using Emgu.CV.OCR;
 using Emgu.CV.Structure;
 
 
@@ -17,6 +19,7 @@ namespace IPHW
         private bool _isPressed;
         private int _startX, _startY, _endX, _endY;
         private System.Drawing.Rectangle _rect;
+        private Tesseract _ocr;
 
         enum State
         {
@@ -37,7 +40,9 @@ namespace IPHW
             _isPressed = false;
             _startX = _startY = _endX = _endY = 0;
             _rect = new Rectangle(0, 0, 0, 0);
-            
+            string path = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory()))) + "\\tessdata.traineddata";
+            _ocr = new Tesseract(path, "eng", OcrEngineMode.Default);
+
             _sourcePictureBox.MouseDown += HandlePictureBoxPress;
             _sourcePictureBox.MouseMove += HandlePictureBoxMove;
             _sourcePictureBox.MouseUp += HandlePictureBoxRelease;
@@ -77,9 +82,11 @@ namespace IPHW
         {
             switch (state)
             {
+                    //灰階
                 case State.gray:
                     _outputPictureBox.Image = new Image<Gray, byte>(_camImage.Bitmap).ToBitmap();
                     break;
+                    //二值化
                 case State.binarization:
                     Gray thresholdValue = new Gray(130);
                     //將影像轉灰階
@@ -88,17 +95,27 @@ namespace IPHW
                     Image<Gray, byte> thresholdImage = grayImage.ThresholdBinary(thresholdValue, new Gray(255));
                     _outputPictureBox.Image = thresholdImage.ToBitmap();
                     break;
+                    //邊緣偵測
                 case State.sobel:
                     Image<Gray, byte> gray = new Image<Gray, byte>((Bitmap)(_sourcePictureBox.Image));
                     Image<Gray, float> sobel = gray.Sobel(0, 1, 3).Add(gray.Sobel(1, 0, 3)).AbsDiff(new Gray(0.0));
                     _outputPictureBox.Image = sobel.ToBitmap();
                     break;
+                    //負片
                 case State.invert:
                     _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).Not().ToBitmap();
                     break;
+                    //數字偵測 OCR
                 case State.OCR:
                     if (_startX != _endX && _startY != _endY)
-                        _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect).ToBitmap();
+                    {
+                        _outputPictureBox.SizeMode = PictureBoxSizeMode.Normal;
+                        //二值化
+                        Image<Gray, byte> image = new Image<Gray, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect);
+                        Image<Gray, byte> threshold = image.ThresholdBinary(new Gray(130), new Gray(255));
+                        //輸出
+                        _outputPictureBox.Image = threshold.ToBitmap();
+                    }
                     break;
                 default:
                     break;
@@ -145,9 +162,7 @@ namespace IPHW
         private void HandlePictureBoxPaint(object sender, PaintEventArgs e)
         {
             if (state == State.OCR)
-            {
                 e.Graphics.DrawRectangle(new Pen(Color.CornflowerBlue, 3), _rect);
-            }            
         }
 
         //get rectangle data
@@ -157,6 +172,18 @@ namespace IPHW
             _rect.Y = Math.Min(_startY, _endY);
             _rect.Width = Math.Max(_startX, _endX) - _rect.X;
             _rect.Height = Math.Max(_startY, _endY) - _rect.Y;
+        }
+
+        //做OCR
+        private void _buttonOCR_Click(object sender, EventArgs e)
+        {
+            if (state == State.OCR)
+            {                
+                _ocr.SetImage(new Image<Gray, byte>((Bitmap)(_outputPictureBox.Image)));
+                _ocr.SetVariable("tessedit_char_whitelist", "0123456789");
+                _ocr.Recognize();
+                _textboxOCR.Text = _ocr.GetUTF8Text();
+            }
         }
 
         //灰階
