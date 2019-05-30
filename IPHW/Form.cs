@@ -14,13 +14,18 @@ namespace IPHW
 
         private Image<Bgr, Byte> _camImage = null;
 
+        private bool _isPressed;
+        private int _startX, _startY, _endX, _endY;
+        private System.Drawing.Rectangle _rect;
+
         enum State
         {
             none, 
             gray,
             binarization,
             sobel,
-            invert
+            invert, 
+            OCR
         };
 
         State state;
@@ -29,6 +34,13 @@ namespace IPHW
         {
             InitializeComponent();
             state = State.none;
+            _isPressed = false;
+            _rect = new Rectangle(0, 0, 0, 0);
+            
+            _sourcePictureBox.MouseDown += HandlePictureBoxPress;
+            _sourcePictureBox.MouseMove += HandlePictureBoxMove;
+            _sourcePictureBox.MouseUp += HandlePictureBoxRelease;
+            _sourcePictureBox.Paint += HandlePictureBoxPaint;
         }
 
         private void ClickOpenCameraButton(object sender, EventArgs e)
@@ -46,6 +58,7 @@ namespace IPHW
 
         }
 
+        //將Webcam上的畫面顯示在pictureBox上
         private void ProcessFrame(object sender, EventArgs e)
         {
             if (_capture != null && _capture.Ptr != IntPtr.Zero)
@@ -82,9 +95,65 @@ namespace IPHW
                 case State.invert:
                     _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).Not().ToBitmap();
                     break;
+                case State.OCR:
+                    _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect).ToBitmap();
+                    break;
                 default:
                     break;
             }
+        }
+
+        //Mouse press event
+        private void HandlePictureBoxPress(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (_capture != null)
+            {
+                _isPressed = true;
+                _startX = e.X;
+                _startY = e.Y;
+            }
+        }
+
+        //Mouse move event
+        private void HandlePictureBoxMove(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (_isPressed)
+            {
+                _endX = e.X;
+                _endY = e.Y;
+                SetRectangleData();
+                state = State.OCR;
+            }
+        }
+
+        //Mouse release event
+        private void HandlePictureBoxRelease(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (_isPressed)
+            {
+                _endX = e.X;
+                _endY = e.Y;
+                SetRectangleData();
+                _isPressed = false;
+            }
+        }
+
+        //picturebox paint
+        private void HandlePictureBoxPaint(object sender, PaintEventArgs e)
+        {
+            if (state == State.OCR)
+            {
+                e.Graphics.DrawRectangle(new Pen(Color.CornflowerBlue, 3), _rect);
+            }            
+        }
+
+        //get rectangle data
+        private void SetRectangleData()
+        {
+            _rect.X = Math.Min(_startX, _endX);
+            _rect.Y = Math.Min(_startY, _endY);
+            _rect.Width = Math.Max(_startX, _endX) - _rect.X;
+            _rect.Height = Math.Max(_startY, _endY) - _rect.Y;
         }
 
         //灰階
