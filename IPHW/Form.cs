@@ -35,6 +35,7 @@ namespace IPHW
             InitializeComponent();
             state = State.none;
             _isPressed = false;
+            _startX = _startY = _endX = _endY = 0;
             _rect = new Rectangle(0, 0, 0, 0);
             
             _sourcePictureBox.MouseDown += HandlePictureBoxPress;
@@ -96,7 +97,8 @@ namespace IPHW
                     _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).Not().ToBitmap();
                     break;
                 case State.OCR:
-                    _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect).ToBitmap();
+                    if (_startX != _endX && _startY != _endY)
+                        _outputPictureBox.Image = new Image<Bgr, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect).ToBitmap();
                     break;
                 default:
                     break;
@@ -109,8 +111,9 @@ namespace IPHW
             if (_capture != null)
             {
                 _isPressed = true;
-                _startX = e.X;
-                _startY = e.Y;
+                _startX = _endX = e.X;
+                _startY = _endY = e.Y;
+                SetRectangleData();
             }
         }
 
