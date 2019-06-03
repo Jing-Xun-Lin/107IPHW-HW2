@@ -70,10 +70,10 @@ namespace IPHW
             if (_capture != null && _capture.Ptr != IntPtr.Zero)
             {
                 _camImage = _capture.QueryFrame().ToImage<Bgr, Byte>();
-                _sourcePictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                _sourcePictureBox.SizeMode = PictureBoxSizeMode.Normal;
                 _sourcePictureBox.Image = _camImage.Bitmap;
 
-                _outputPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+                _outputPictureBox.SizeMode = PictureBoxSizeMode.Normal;
                 HandleOutputPictureBox();
             }
         }
@@ -109,7 +109,7 @@ namespace IPHW
                 case State.OCR:
                     if (_startX != _endX && _startY != _endY)
                     {
-                        _outputPictureBox.SizeMode = PictureBoxSizeMode.Normal;
+                        //_outputPictureBox.SizeMode = PictureBoxSizeMode.Normal;
                         //二值化
                         Image<Gray, byte> image = new Image<Gray, byte>((Bitmap)(_sourcePictureBox.Image)).GetSubRect(_rect);
                         Image<Gray, byte> threshold = image.ThresholdBinary(new Gray(130), new Gray(255));
@@ -139,8 +139,8 @@ namespace IPHW
         {
             if (_isPressed)
             {
-                _endX = e.X;
-                _endY = e.Y;
+                _endX = Math.Max(Math.Min(e.X, _sourcePictureBox.Width), 0);
+                _endY = Math.Max(Math.Min(e.Y, _sourcePictureBox.Height), 0);
                 SetRectangleData();
                 state = State.OCR;
             }
@@ -151,8 +151,8 @@ namespace IPHW
         {
             if (_isPressed)
             {
-                _endX = e.X;
-                _endY = e.Y;
+                _endX = Math.Max(Math.Min(e.X, _sourcePictureBox.Width), 0);
+                _endY = Math.Max(Math.Min(e.Y, _sourcePictureBox.Height), 0);
                 SetRectangleData();
                 _isPressed = false;
             }
