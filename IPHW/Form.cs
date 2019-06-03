@@ -41,7 +41,7 @@ namespace IPHW
             _startX = _startY = _endX = _endY = 0;
             _rect = new Rectangle(0, 0, 0, 0);
             string path = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory()))) + "\\tessdata.traineddata";
-            _ocr = new Tesseract(path, "eng", OcrEngineMode.Default);
+            _ocr = new Tesseract(path, "eng", OcrEngineMode.TesseractLstmCombined);
 
             _sourcePictureBox.MouseDown += HandlePictureBoxPress;
             _sourcePictureBox.MouseMove += HandlePictureBoxMove;
